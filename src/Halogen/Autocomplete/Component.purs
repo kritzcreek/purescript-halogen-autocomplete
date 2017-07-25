@@ -64,11 +64,11 @@ type State item =
   , inputText ∷ String
   }
 
-data Message = Selected
+data Message item = Changed String | Selected item
 type Input = Array
 
 type HTML item = H.ComponentHTML (Query item)
-type DSL item m = H.ComponentDSL (State item) (Query item) Message m
+type DSL item m = H.ComponentDSL (State item) (Query item) (Message item) m
 
 type Config item =
   { containerClass ∷ HH.ClassName
@@ -89,7 +89,7 @@ component
   ∷ ∀ item e m
   . MonadEff (dom ∷ DOM | e) m
   ⇒ Config item
-  → H.Component HH.HTML (Query item) (Input item) Message m
+  → H.Component HH.HTML (Query item) (Input item) (Message item) m
 component { containerClass, itemFilter, itemText, itemDisplay } =
   H.lifecycleComponent
    { initialState
@@ -148,6 +148,7 @@ component { containerClass, itemFilter, itemText, itemDisplay } =
      Input input a → do
        H.modify (_ { inputText = input })
        { items } ← H.get
+       H.raise (Changed input)
        if null (filter (itemFilter input) items)
          then do
            close CuzNoMatches
@@ -159,11 +160,17 @@ component { containerClass, itemFilter, itemText, itemDisplay } =
      ItemClick item ev a → do
        when (MouseEvent.button ev == 0) do
          H.liftEff (preventDefault (MouseEvent.mouseEventToEvent ev))
-         H.modify (_ { inputText = itemText item })
+         let newInput = itemText item
+         H.modify (_ { inputText = newInput })
+         H.raise (Changed newInput)
+         H.raise (Selected item)
          close CuzSelect
        pure a
      Select item a → do
+       let newInput = itemText item
        H.modify (_ { inputText = itemText item })
+       H.raise (Changed newInput)
+       H.raise (Selected item)
        pure a
      Previous a → do
        { index } ← H.get
