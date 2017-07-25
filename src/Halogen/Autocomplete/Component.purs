@@ -16,7 +16,10 @@ import DOM.Node.Element (clientHeight, setScrollTop)
 import DOM.Node.Node (childNodes)
 import DOM.Node.NodeList as NodeList
 import Data.Array (filter, length, mapWithIndex, null, (!!))
+import Data.Bifunctor (bimap)
+import Data.Const (Const(..))
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Newtype (un)
 import Data.String as String
 import Data.Traversable (traverse_)
 import Debug.Trace (traceA)
@@ -70,7 +73,7 @@ type Config item =
   { containerClass ∷ HH.ClassName
   , itemFilter ∷ String → item → Boolean
   , itemText ∷ item → String
-  -- , itemDisplay ∷ item → H.HTML Void (Const Void)
+  , itemDisplay ∷ item → H.HTML Void (Const Void)
   }
 
 defaultConfig ∷ Config String
@@ -78,6 +81,7 @@ defaultConfig =
   { containerClass: HH.ClassName "halogen-autocomplete"
   , itemFilter: \input item → not String.null input && String.contains (String.Pattern input) item
   , itemText: id
+  , itemDisplay: \item → HH.text item
   }
 
 component
@@ -85,7 +89,7 @@ component
   . MonadEff (dom ∷ DOM | e) m
   ⇒ Config item
   → H.Component HH.HTML (Query item) (Input item) Message m
-component { containerClass, itemFilter, itemText } =
+component { containerClass, itemFilter, itemText, itemDisplay } =
   H.lifecycleComponent
    { initialState
    , render
@@ -132,7 +136,7 @@ component { containerClass, itemFilter, itemText } =
             [ HE.onMouseDown (HE.input (ItemClick item))
             , Aria.selected (if Just ix == state.index then "true" else "false")
             ]
-            [ HH.text (itemText item) ]
+            [ bimap absurd (absurd <<< un Const) (itemDisplay item) ]
 
     eval ∷ Query item ~> DSL item m
     eval = case _ of
