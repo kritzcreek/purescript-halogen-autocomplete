@@ -32,6 +32,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 data Query item a
   = Init a
+  | UpdateItems (Array item) a
   | Input String a
   | Select item a
   | ItemClick item MouseEvent a
@@ -96,7 +97,7 @@ component { containerClass, itemFilter, itemText, itemDisplay } =
    , eval
    , initializer: Just (H.action Init)
    , finalizer: Nothing
-   , receiver: const Nothing
+   , receiver: HE.input UpdateItems
    }
   where
     initialState =
@@ -141,6 +142,9 @@ component { containerClass, itemFilter, itemText, itemDisplay } =
     eval ∷ Query item ~> DSL item m
     eval = case _ of
      Init a → pure a
+     UpdateItems items a → do
+       H.modify (_ { items = items })
+       pure a
      Input input a → do
        H.modify (_ { inputText = input })
        { items } ← H.get
