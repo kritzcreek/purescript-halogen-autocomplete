@@ -22,7 +22,6 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (un)
 import Data.String as String
 import Data.Traversable (traverse_)
-import Debug.Trace (traceA)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -234,7 +233,6 @@ goto itemText index = do
 
 close ∷ ∀ item m. Reason → DSL item m Unit
 close reason = do
-  traceA (showReason reason)
   whenM (H.gets _.open) do
     H.modify (_ { index = Nothing, open = false })
 
