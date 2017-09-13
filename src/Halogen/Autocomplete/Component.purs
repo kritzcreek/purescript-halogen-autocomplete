@@ -157,17 +157,15 @@ component { containerClass, itemFilter, itemText, itemDisplay } =
        close CuzBlur
        pure a
      ItemClick item ev a → do
-       when (MouseEvent.button ev == 0) do
+       case MouseEvent.button ev of
+        0 -> do
          H.liftEff (preventDefault (MouseEvent.mouseEventToEvent ev))
-         let newInput = itemText item
-         H.modify (_ { inputText = newInput })
-         H.raise (Changed newInput)
-         H.raise (Selected item)
          close CuzSelect
-       pure a
+         eval (Select item a)
+        _ -> pure a
      Select item a → do
        let newInput = itemText item
-       H.modify (_ { inputText = itemText item })
+       H.modify (_ { inputText = newInput })
        H.raise (Changed newInput)
        H.raise (Selected item)
        pure a
@@ -200,7 +198,9 @@ component { containerClass, itemFilter, itemText, itemDisplay } =
            { index } ← H.get
            items ← displayedItems
            case (items !! _) =<< index of
-             Just item → eval (Select item a)
+             Just item → do
+              close CuzSelect
+              eval (Select item a)
              Nothing → pure a
          "Escape" → do
            close CuzEscape
